@@ -30,7 +30,7 @@ import (
 	"github.com/ethereum/go-ethereum/event"
 	"github.com/ethereum/go-ethereum/node"
 	"github.com/ethereum/go-ethereum/p2p"
-	"github.com/ethereum/go-ethereum/p2p/enode"
+	"github.com/ethereum/go-ethereum/p2p/discover"
 	"github.com/ethereum/go-ethereum/p2p/simulations/adapters"
 	"github.com/ethereum/go-ethereum/rpc"
 )
@@ -38,12 +38,12 @@ import (
 // testService implements the node.Service interface and provides protocols
 // and APIs which are useful for testing nodes in a simulation network
 type testService struct {
-	id enode.ID
+	id discover.NodeID
 
 	// peerCount is incremented once a peer handshake has been performed
 	peerCount int64
 
-	peers    map[enode.ID]*testPeer
+	peers    map[discover.NodeID]*testPeer
 	peersMtx sync.Mutex
 
 	// state stores []byte which is used to test creating and loading
@@ -54,7 +54,7 @@ type testService struct {
 func newTestService(ctx *adapters.ServiceContext) (node.Service, error) {
 	svc := &testService{
 		id:    ctx.Config.ID,
-		peers: make(map[enode.ID]*testPeer),
+		peers: make(map[discover.NodeID]*testPeer),
 	}
 	svc.state.Store(ctx.Snapshot)
 	return svc, nil
@@ -65,7 +65,7 @@ type testPeer struct {
 	dumReady  chan struct{}
 }
 
-func (t *testService) peer(id enode.ID) *testPeer {
+func (t *testService) peer(id discover.NodeID) *testPeer {
 	t.peersMtx.Lock()
 	defer t.peersMtx.Unlock()
 	if peer, ok := t.peers[id]; ok {
@@ -348,8 +348,7 @@ func startTestNetwork(t *testing.T, client *Client) []string {
 	nodeCount := 2
 	nodeIDs := make([]string, nodeCount)
 	for i := 0; i < nodeCount; i++ {
-		config := adapters.RandomNodeConfig()
-		node, err := client.CreateNode(config)
+		node, err := client.CreateNode(nil)
 		if err != nil {
 			t.Fatalf("error creating node: %s", err)
 		}
@@ -410,7 +409,7 @@ func (t *expectEvents) nodeEvent(id string, up bool) *Event {
 		Type: EventTypeNode,
 		Node: &Node{
 			Config: &adapters.NodeConfig{
-				ID: enode.HexID(id),
+				ID: discover.MustHexID(id),
 			},
 			Up: up,
 		},
@@ -421,8 +420,8 @@ func (t *expectEvents) connEvent(one, other string, up bool) *Event {
 	return &Event{
 		Type: EventTypeConn,
 		Conn: &Conn{
-			One:   enode.HexID(one),
-			Other: enode.HexID(other),
+			One:   discover.MustHexID(one),
+			Other: discover.MustHexID(other),
 			Up:    up,
 		},
 	}
@@ -528,9 +527,7 @@ func TestHTTPNodeRPC(t *testing.T) {
 
 	// start a node in the network
 	client := NewClient(s.URL)
-
-	config := adapters.RandomNodeConfig()
-	node, err := client.CreateNode(config)
+	node, err := client.CreateNode(nil)
 	if err != nil {
 		t.Fatalf("error creating node: %s", err)
 	}
@@ -592,8 +589,7 @@ func TestHTTPSnapshot(t *testing.T) {
 	nodeCount := 2
 	nodes := make([]*p2p.NodeInfo, nodeCount)
 	for i := 0; i < nodeCount; i++ {
-		config := adapters.RandomNodeConfig()
-		node, err := client.CreateNode(config)
+		node, err := client.CreateNode(nil)
 		if err != nil {
 			t.Fatalf("error creating node: %s", err)
 		}

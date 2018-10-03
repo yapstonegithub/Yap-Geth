@@ -32,6 +32,15 @@ func MainnetGenesis() string {
 	return ""
 }
 
+// YapstoneGenesis returns the JSON spec to use for the Yapstone network.
+func YapstoneGenesis() string {
+	enc, err := json.Marshal(core.YapstoneGenesisBlock())
+	if err != nil {
+		panic(err)
+	}
+	return string(enc)
+}
+
 // TestnetGenesis returns the JSON spec to use for the Ethereum test network.
 func TestnetGenesis() string {
 	enc, err := json.Marshal(core.DefaultTestnetGenesisBlock())

@@ -48,7 +48,7 @@ import (
 )
 
 // ExternalAPIVersion -- see extapi_changelog.md
-const ExternalAPIVersion = "3.0.0"
+const ExternalAPIVersion = "2.0.0"
 
 // InternalAPIVersion -- see intapi_changelog.md
 const InternalAPIVersion = "2.0.0"
@@ -69,10 +69,6 @@ var (
 		Name:  "loglevel",
 		Value: 4,
 		Usage: "log level to emit to the screen",
-	}
-	advancedMode = cli.BoolFlag{
-		Name:  "advanced",
-		Usage: "If enabled, issues warnings instead of rejections for suspicious requests. Default off",
 	}
 	keystoreFlag = cli.StringFlag{
 		Name:  "keystore",
@@ -195,7 +191,6 @@ func init() {
 		ruleFlag,
 		stdiouiFlag,
 		testFlag,
-		advancedMode,
 	}
 	app.Action = signer
 	app.Commands = []cli.Command{initCommand, attestCommand, addCredentialCommand}
@@ -230,7 +225,7 @@ func initializeSecrets(c *cli.Context) error {
 	if _, err := os.Stat(location); err == nil {
 		return fmt.Errorf("file %v already exists, will not overwrite", location)
 	}
-	err = ioutil.WriteFile(location, masterSeed, 0400)
+	err = ioutil.WriteFile(location, masterSeed, 0700)
 	if err != nil {
 		return err
 	}
@@ -389,8 +384,7 @@ func signer(c *cli.Context) error {
 		c.String(keystoreFlag.Name),
 		c.Bool(utils.NoUSBFlag.Name),
 		ui, db,
-		c.Bool(utils.LightKDFFlag.Name),
-		c.Bool(advancedMode.Name))
+		c.Bool(utils.LightKDFFlag.Name))
 
 	api = apiImpl
 
@@ -421,7 +415,7 @@ func signer(c *cli.Context) error {
 
 		// start http server
 		httpEndpoint := fmt.Sprintf("%s:%d", c.String(utils.RPCListenAddrFlag.Name), c.Int(rpcPortFlag.Name))
-		listener, _, err := rpc.StartHTTPEndpoint(httpEndpoint, rpcAPI, []string{"account"}, cors, vhosts, rpc.DefaultHTTPTimeouts)
+		listener, _, err := rpc.StartHTTPEndpoint(httpEndpoint, rpcAPI, []string{"account"}, cors, vhosts)
 		if err != nil {
 			utils.Fatalf("Could not start RPC api: %v", err)
 		}
@@ -546,14 +540,14 @@ func readMasterKey(ctx *cli.Context) ([]byte, error) {
 
 // checkFile is a convenience function to check if a file
 // * exists
-// * is mode 0400
+// * is mode 0600
 func checkFile(filename string) error {
 	info, err := os.Stat(filename)
 	if err != nil {
 		return fmt.Errorf("failed stat on %s: %v", filename, err)
 	}
 	// Check the unix permission bits
-	if info.Mode().Perm()&0377 != 0 {
+	if info.Mode().Perm()&077 != 0 {
 		return fmt.Errorf("file (%v) has insecure file permissions (%v)", filename, info.Mode().String())
 	}
 	return nil

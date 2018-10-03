@@ -159,8 +159,8 @@ func SetupGenesisBlock(db ethdb.Database, genesis *Genesis) (*params.ChainConfig
 	stored := rawdb.ReadCanonicalHash(db, 0)
 	if (stored == common.Hash{}) {
 		if genesis == nil {
-			log.Info("Writing default main-net genesis block")
-			genesis = DefaultGenesisBlock()
+			log.Info("Writing default yapstone main-net genesis block")
+			genesis = YapstoneGenesisBlock()
 		} else {
 			log.Info("Writing custom genesis block")
 		}
@@ -213,6 +213,8 @@ func (g *Genesis) configOrDefault(ghash common.Hash) *params.ChainConfig {
 		return params.MainnetChainConfig
 	case ghash == params.TestnetGenesisHash:
 		return params.TestnetChainConfig
+	case ghash == params.YapstoneGenesisHash:
+		return params.YapstoneChainConfig
 	default:
 		return params.AllEthashProtocolChanges
 	}
@@ -309,6 +311,18 @@ func DefaultGenesisBlock() *Genesis {
 	}
 }
 
+// YapstoneGenesisBlock returns the Yapstone main net genesis block.
+func YapstoneGenesisBlock() *Genesis {
+	return &Genesis{
+		Config:     params.YapstoneChainConfig,
+		Nonce:      66,
+		ExtraData:  hexutil.MustDecode("0x0000000000000000000000000000000000000000000000000000000000000000"),
+		GasLimit:   5000,
+		Difficulty: big.NewInt(131072),
+		Alloc:      decodePrealloc(yapstoneAllocData),
+	}
+}
+
 // DefaultTestnetGenesisBlock returns the Ropsten network genesis block.
 func DefaultTestnetGenesisBlock() *Genesis {
 	return &Genesis{
@@ -355,7 +369,7 @@ func DeveloperGenesisBlock(period uint64, faucet common.Address) *Genesis {
 			common.BytesToAddress([]byte{6}): {Balance: big.NewInt(1)}, // ECAdd
 			common.BytesToAddress([]byte{7}): {Balance: big.NewInt(1)}, // ECScalarMul
 			common.BytesToAddress([]byte{8}): {Balance: big.NewInt(1)}, // ECPairing
-			faucet:                           {Balance: new(big.Int).Sub(new(big.Int).Lsh(big.NewInt(1), 256), big.NewInt(9))},
+			faucet: {Balance: new(big.Int).Sub(new(big.Int).Lsh(big.NewInt(1), 256), big.NewInt(9))},
 		},
 	}
 }

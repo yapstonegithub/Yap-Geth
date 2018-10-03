@@ -18,80 +18,55 @@ package testutil
 
 import (
 	"io/ioutil"
-	"net/http"
 	"net/http/httptest"
 	"os"
 	"testing"
 
 	"github.com/ethereum/go-ethereum/swarm/api"
+	httpapi "github.com/ethereum/go-ethereum/swarm/api/http"
 	"github.com/ethereum/go-ethereum/swarm/storage"
-	"github.com/ethereum/go-ethereum/swarm/storage/mru"
 )
 
-type TestServer interface {
-	ServeHTTP(http.ResponseWriter, *http.Request)
-}
-
-func NewTestSwarmServer(t *testing.T, serverFunc func(*api.API) TestServer, resolver api.Resolver) *TestSwarmServer {
+func NewTestSwarmServer(t *testing.T) *TestSwarmServer {
 	dir, err := ioutil.TempDir("", "swarm-storage-test")
 	if err != nil {
 		t.Fatal(err)
 	}
-	storeparams := storage.NewDefaultLocalStoreParams()
-	storeparams.DbCapacity = 5000000
-	storeparams.CacheCapacity = 5000
-	storeparams.Init(dir)
-	localStore, err := storage.NewLocalStore(storeparams, nil)
+	storeparams := &storage.StoreParams{
+		ChunkDbPath:   dir,
+		DbCapacity:    5000000,
+		CacheCapacity: 5000,
+		Radius:        0,
+	}
+	localStore, err := storage.NewLocalStore(storage.MakeHashFunc("SHA3"), storeparams)
 	if err != nil {
 		os.RemoveAll(dir)
 		t.Fatal(err)
 	}
-	fileStore := storage.NewFileStore(localStore, storage.NewFileStoreParams())
-
-	// mutable resources test setup
-	resourceDir, err := ioutil.TempDir("", "swarm-resource-test")
-	if err != nil {
-		t.Fatal(err)
+	chunker := storage.NewTreeChunker(storage.NewChunkerParams())
+	dpa := &storage.DPA{
+		Chunker:    chunker,
+		ChunkStore: localStore,
 	}
-
-	rhparams := &mru.HandlerParams{}
-	rh, err := mru.NewTestHandler(resourceDir, rhparams)
-	if err != nil {
-		t.Fatal(err)
+	dpa.Start()
+	a := api.NewApi(dpa, nil)
+	srv := httptest.NewServer(httpapi.NewServer(a))
+	return &TestSwarmServer{
+		Server: srv,
+		Dpa:    dpa,
+		dir:    dir,
 	}
-
-	a := api.NewAPI(fileStore, resolver, rh.Handler, nil)
-	srv := httptest.NewServer(serverFunc(a))
-	tss := &TestSwarmServer{
-		Server:    srv,
-		FileStore: fileStore,
-		dir:       dir,
-		Hasher:    storage.MakeHashFunc(storage.DefaultHash)(),
-		cleanup: func() {
-			srv.Close()
-			rh.Close()
-			os.RemoveAll(dir)
-			os.RemoveAll(resourceDir)
-		},
-		CurrentTime: 42,
-	}
-	mru.TimestampProvider = tss
-	return tss
 }
 
 type TestSwarmServer struct {
 	*httptest.Server
-	Hasher      storage.SwarmHash
-	FileStore   *storage.FileStore
-	dir         string
-	cleanup     func()
-	CurrentTime uint64
+
+	Dpa *storage.DPA
+	dir string
 }
 
 func (t *TestSwarmServer) Close() {
-	t.cleanup()
-}
-
-func (t *TestSwarmServer) Now() mru.Timestamp {
-	return mru.Timestamp{Time: t.CurrentTime}
+	t.Server.Close()
+	t.Dpa.Stop()
+	os.RemoveAll(t.dir)
 }

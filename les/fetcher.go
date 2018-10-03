@@ -32,9 +32,8 @@ import (
 )
 
 const (
-	blockDelayTimeout    = time.Second * 10 // timeout for a peer to announce a head that has already been confirmed by others
-	maxNodeCount         = 20               // maximum number of fetcherTreeNode entries remembered for each peer
-	serverStateAvailable = 100              // number of recent blocks where state availability is assumed
+	blockDelayTimeout = time.Second * 10 // timeout for a peer to announce a head that has already been confirmed by others
+	maxNodeCount      = 20               // maximum number of fetcherTreeNode entries remembered for each peer
 )
 
 // lightFetcher implements retrieval of newly announced headers. It also provides a peerHasBlock function for the
@@ -216,8 +215,8 @@ func (f *lightFetcher) syncLoop() {
 // registerPeer adds a new peer to the fetcher's peer set
 func (f *lightFetcher) registerPeer(p *peer) {
 	p.lock.Lock()
-	p.hasBlock = func(hash common.Hash, number uint64, hasState bool) bool {
-		return f.peerHasBlock(p, hash, number, hasState)
+	p.hasBlock = func(hash common.Hash, number uint64) bool {
+		return f.peerHasBlock(p, hash, number)
 	}
 	p.lock.Unlock()
 
@@ -268,16 +267,9 @@ func (f *lightFetcher) announce(p *peer, head *announceData) {
 		}
 		n = n.parent
 	}
-	// n is now the reorg common ancestor, add a new branch of nodes
-	if n != nil && (head.Number >= n.number+maxNodeCount || head.Number <= n.number) {
-		// if announced head block height is lower or same as n or too far from it to add
-		// intermediate nodes then discard previous announcement info and trigger a resync
-		n = nil
-		fp.nodeCnt = 0
-		fp.nodeByHash = make(map[common.Hash]*fetcherTreeNode)
-	}
 	if n != nil {
-		// check if the node count is too high to add new nodes, discard oldest ones if necessary
+		// n is now the reorg common ancestor, add a new branch of nodes
+		// check if the node count is too high to add new nodes
 		locked := false
 		for uint64(fp.nodeCnt)+head.Number-n.number > maxNodeCount && fp.root != nil {
 			if !locked {
@@ -345,25 +337,19 @@ func (f *lightFetcher) announce(p *peer, head *announceData) {
 
 // peerHasBlock returns true if we can assume the peer knows the given block
 // based on its announcements
-func (f *lightFetcher) peerHasBlock(p *peer, hash common.Hash, number uint64, hasState bool) bool {
+func (f *lightFetcher) peerHasBlock(p *peer, hash common.Hash, number uint64) bool {
 	f.lock.Lock()
 	defer f.lock.Unlock()
-
-	fp := f.peers[p]
-	if fp == nil || fp.root == nil {
-		return false
-	}
-
-	if hasState {
-		if fp.lastAnnounced == nil || fp.lastAnnounced.number > number+serverStateAvailable {
-			return false
-		}
-	}
 
 	if f.syncing {
 		// always return true when syncing
 		// false positives are acceptable, a more sophisticated condition can be implemented later
 		return true
+	}
+
+	fp := f.peers[p]
+	if fp == nil || fp.root == nil {
+		return false
 	}
 
 	if number >= fp.root.number {
