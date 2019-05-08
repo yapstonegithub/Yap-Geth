@@ -33,9 +33,7 @@ var MainnetBootnodes = []string{
 // YapstoneBootnodes are the enode URLs of the P2P bootstrap nodes running on
 // the Yapstone network.
 var YapstoneBootnodes = []string{
-	"enode://823c6181fb197248b8d2cfd7bb8bb12220c2d120d402c21d084cbe976eeb5b5507f442bacac8748c05ae391a179cb7a874b56b8a5f5b53a90aeb1b1883d3fd5a@13.125.86.28:30303",
-	"enode://90e9688f897206135edb35f7f8348ff5c9bd095d783738dbd6264af971f0e2b7b7425d287d7d55a01ea212cacc0f65da7f045573d2a54fa3d1a3b8aca088efd9@13.125.55.11:30303",
-	"enode://667fcfe8ee315a0317e1718f7b0ee7c45becf0a964cfc1f10b826dcf926e52b98f1efecfe5c19a9bd9a0b7ebb15e6143421c1dceb198b5fb838d789abadb45d4@13.125.59.180:30303",
+	"enode://823c6181fb197248b8d2cfd7bb8bb12220c2d120d402c21d084cbe976eeb5b5507f442bacac8748c05ae391a179cb7a874b56b8a5f5b53a90aeb1b1883d3fd5a@13.125.32.11:30303",
 }
 
 // TestnetBootnodes are the enode URLs of the P2P bootstrap nodes running on the

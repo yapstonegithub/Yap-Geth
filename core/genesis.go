@@ -315,10 +315,10 @@ func DefaultGenesisBlock() *Genesis {
 func YapstoneGenesisBlock() *Genesis {
 	return &Genesis{
 		Config:     params.YapstoneChainConfig,
-		Nonce:      66,
+		Nonce:      42,
 		ExtraData:  hexutil.MustDecode("0x0000000000000000000000000000000000000000000000000000000000000000"),
-		GasLimit:   5000,
-		Difficulty: big.NewInt(131072),
+		GasLimit:   210000,
+		Difficulty: big.NewInt(5000),
 		Alloc:      decodePrealloc(yapstoneAllocData),
 	}
 }

@@ -26,7 +26,7 @@ import (
 var (
 	MainnetGenesisHash  = common.HexToHash("0xd4e56740f876aef8c010b86a40d5f56745a118d0906a34e69aec8c0db1cb8fa3") // Mainnet genesis hash to enforce below configs on
 	TestnetGenesisHash  = common.HexToHash("0x41941023680923e0fe4d74a34bdac8141f2540e3ae90623718e47d66d1ca4a2d") // Testnet genesis hash to enforce below configs on
-	YapstoneGenesisHash = common.HexToHash("0x31fc5884c3e19dd335aad123c3969bb55d8f6396866b02c932c2897246fd5692") // Yapstone genesis hash to enforce below configs on
+	YapstoneGenesisHash = common.HexToHash("0x7f14f78571b84a1111c0540e11bf939f58acb441cc83a73d51fb0c26f6be86ed") // Yapstone genesis hash to enforce below configs on
 )
 
 var (
@@ -48,12 +48,12 @@ var (
 
 	// YapstoneChainConfig is the chain parameters to run a node on the Yapstone main network.
 	YapstoneChainConfig = &ChainConfig{
-		ChainId:             big.NewInt(528),
+		ChainId:             big.NewInt(20),
 		HomesteadBlock:      big.NewInt(0),
 		DAOForkBlock:        nil,
 		DAOForkSupport:      true,
 		EIP150Block:         big.NewInt(0),
-		EIP150Hash:          common.HexToHash("0x31fc5884c3e19dd335aad123c3969bb55d8f6396866b02c932c2897246fd5692"),
+		EIP150Hash:          common.HexToHash("0x7f14f78571b84a1111c0540e11bf939f58acb441cc83a73d51fb0c26f6be86ed"),
 		EIP155Block:         big.NewInt(0),
 		EIP158Block:         big.NewInt(0),
 		ByzantiumBlock:      big.NewInt(0),
